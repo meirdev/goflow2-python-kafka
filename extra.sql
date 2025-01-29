@@ -70,8 +70,7 @@ CREATE MATERIALIZED VIEW IF NOT EXISTS inbound_mv TO inbound AS
         getPrefix(etype, src_addr) AS prefix,
         networks.tenant AS tenant
     FROM flows_raw
-    LEFT JOIN networks ON networks.prefix = prefix
-    WHERE prefix != '';
+    INNER JOIN networks ON networks.prefix = prefix;
 
 CREATE TABLE IF NOT EXISTS inbound_1m
 (
