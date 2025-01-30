@@ -67,7 +67,7 @@ TTL date + INTERVAL 30 DAY;
 CREATE MATERIALIZED VIEW IF NOT EXISTS inbound_mv TO inbound AS
     SELECT
         *,
-        getPrefix(etype, src_addr) AS prefix,
+        getPrefix(etype, dst_addr) AS prefix,
         networks.tenant AS tenant
     FROM flows_raw
     INNER JOIN networks ON networks.prefix = prefix;
