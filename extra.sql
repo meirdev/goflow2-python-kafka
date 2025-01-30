@@ -64,6 +64,9 @@ PARTITION BY date
 ORDER BY (tenant, prefix, time_received)
 TTL date + INTERVAL 30 DAY;
 
+ALTER TABLE inbound ADD INDEX prefix_idx prefix TYPE set(100000) GRANULARITY 1;
+ALTER TABLE inbound ADD INDEX tenant_idx tenant TYPE set(100000) GRANULARITY 1;
+
 CREATE MATERIALIZED VIEW IF NOT EXISTS inbound_mv TO inbound AS
     SELECT
         *,
@@ -84,6 +87,8 @@ CREATE TABLE IF NOT EXISTS inbound_1m
 ENGINE = SummingMergeTree()
 ORDER BY (prefix, minute)
 TTL minute + INTERVAL 30 DAY;
+
+ALTER TABLE inbound_1m ADD INDEX prefix_idx prefix TYPE set(100000) GRANULARITY 1;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS inbound_1m_mv TO inbound_1m AS
     SELECT
