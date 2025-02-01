@@ -1,22 +1,61 @@
 services:
   kafka:
-    image: bitnami/kafka:latest
+    image: bitnami/kafka:3.9.0
     restart: always
     ports:
       - "9092:9092"
-      - "9093:9093"
     environment:
+      - KAFKA_DELETE_TOPIC_ENABLE=true
+      - KAFKA_KRAFT_CLUSTER_ID=AAAAAAAAAAAAAAAAAAAAAA
       - ALLOW_PLAINTEXT_LISTENER=yes
       - KAFKA_ENABLE_KRAFT=yes
       - KAFKA_CFG_NODE_ID=1
       - KAFKA_CFG_BROKER_ID=1
       - KAFKA_CFG_PROCESS_ROLES=broker,controller
       - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,INTERNAL://:9094
-      - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://127.0.0.1:9092,INTERNAL://kafka:9094
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@127.0.0.1:9093
+      - KAFKA_CFG_LISTENERS=CONTROLLER://localhost:9091,HOST://0.0.0.0:9092,INTERNAL://0.0.0.0:9093
+      - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,HOST:PLAINTEXT
+      - KAFKA_CFG_ADVERTISED_LISTENERS=HOST://127.0.0.1:9092,INTERNAL://kafka:9093
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@localhost:9091
+
+  grafana:
+    image: grafana/grafana:11.5.0
+    ports:
+      - "3000:3000"
+    restart: always
+    volumes:
+      - ./grafana/provisioning/datasources/default.yaml:/etc/grafana/provisioning/datasources/default.yaml
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+      - grafana:/var/lib/grafana
+
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    ports:
+      - "9090:9090"
+    restart: always
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus:/prometheus
+
+  loki:
+    image: grafana/loki:3.3.2
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/loki-config.yaml:/etc/loki/local-config.yaml
+      - loki:/loki
+
+  alloy:
+    image: grafana/alloy:v1.6.1
+    ports:
+      - "12345:12345"
+      - "12201:12201/udp"
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy
+    command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
 
   goflow2:
     image: netsampler/goflow2:latest
@@ -26,23 +65,10 @@ services:
       - "8080:8080"
     restart: always
     command:
-      - -transport.kafka.brokers=kafka:9094
+      - -transport.kafka.brokers=kafka:9093
       - -transport=kafka
       - -transport.kafka.topic=flows
       - -format=bin
-    depends_on:
-      - kafka
-
-  clickhouse:
-    container_name: clickhouse
-    image: clickhouse/clickhouse-server:24.12-alpine
-    ports:
-      - "8123:8123"
-      - "9000:9000"
-      - "9363:9363"
-    volumes:
-      - ./clickhouse-init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./protobuf-compiler/flow.proto:/var/lib/clickhouse/format_schemas/flow.proto
     depends_on:
       - kafka
 
@@ -50,3 +76,8 @@ services:
     image: networkstatic/nflow-generator
     restart: always
     command: -p 2055 -t goflow2
+
+volumes:
+  loki:
+  prometheus:
+  grafana:

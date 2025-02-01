@@ -29,8 +29,11 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "confluent-kafka" },
+    { name = "graypy" },
     { name = "loguru" },
+    { name = "prometheus-client" },
     { name = "protobuf" },
+    { name = "pytricia" },
 ]
 
 [package.dev-dependencies]
@@ -42,14 +45,26 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "confluent-kafka", specifier = ">=2.8.0" },
+    { name = "graypy", specifier = ">=2.1.0" },
     { name = "loguru", specifier = ">=0.7.3" },
+    { name = "prometheus-client", specifier = ">=0.21.1" },
     { name = "protobuf", specifier = ">=5.29.3" },
+    { name = "pytricia", specifier = ">=1.0.2" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "ruff", specifier = ">=0.9.3" },
     { name = "types-confluent-kafka", specifier = ">=1.3.1" },
+]
+
+[[package]]
+name = "graypy"
+version = "2.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/8c/13/9fd9d88a16d4333b784c0d24daf90cf93bac63c7ab031dc72d9425b7f106/graypy-2.1.0.tar.gz", hash = "sha256:fd8dc4a721de1278576d92db10ac015e99b4e480cf1b18892e79429fd9236e16", size = 24187 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/82/80/d9de7f4747ab54aad84c479d2c3dad9171de5a7f832ce4229bcef1f472ce/graypy-2.1.0-py2.py3-none-any.whl", hash = "sha256:5df0102ed52fdaa24dd579bc1e4904480c2c9bbb98917a0b3241ecf510c94207", size = 29907 },
 ]
 
 [[package]]
@@ -66,6 +81,15 @@ wheels = [
 ]
 
 [[package]]
+name = "prometheus-client"
+version = "0.21.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/62/14/7d0f567991f3a9af8d1cd4f619040c93b68f09a02b6d0b6ab1b2d1ded5fe/prometheus_client-0.21.1.tar.gz", hash = "sha256:252505a722ac04b0456be05c05f75f45d760c2911ffc45f2a06bcaed9f3ae3fb", size = 78551 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ff/c2/ab7d37426c179ceb9aeb109a85cda8948bb269b7561a0be870cc656eefe4/prometheus_client-0.21.1-py3-none-any.whl", hash = "sha256:594b45c410d6f4f8888940fe80b5cc2521b305a1fafe1c58609ef715a001f301", size = 54682 },
+]
+
+[[package]]
 name = "protobuf"
 version = "5.29.3"
 source = { registry = "https://pypi.org/simple" }
@@ -78,6 +102,12 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/a8/45/2ebbde52ad2be18d3675b6bee50e68cd73c9e0654de77d595540b5129df8/protobuf-5.29.3-cp38-abi3-manylinux2014_x86_64.whl", hash = "sha256:c027e08a08be10b67c06bf2370b99c811c466398c357e615ca88c91c07f0910f", size = 319672 },
     { url = "https://files.pythonhosted.org/packages/fd/b2/ab07b09e0f6d143dfb839693aa05765257bceaa13d03bf1a696b78323e7a/protobuf-5.29.3-py3-none-any.whl", hash = "sha256:0a18ed4a24198528f2333802eb075e59dea9d679ab7a6c5efb017a59004d849f", size = 172550 },
 ]
+
+[[package]]
+name = "pytricia"
+version = "1.0.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/99/6d6c7cea1a4d52b8882d6a6103f4079373ae3a71d945e4e56742a5324844/pytricia-1.0.2.tar.gz", hash = "sha256:7f6c0afdce55a1b7651a1a56d8b621c228a211dd23f3f8c5c1fdec3af2c19b15", size = 20766 }
 
 [[package]]
 name = "ruff"
