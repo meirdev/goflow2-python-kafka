@@ -1,10 +1,10 @@
 import json
 import logging
+import socket
 from datetime import datetime, timezone
 from ipaddress import ip_address, IPv4Network, IPv6Address
 from io import BytesIO
 
-import graypy
 import pytricia
 from confluent_kafka import Consumer
 from google.protobuf import proto
@@ -13,6 +13,8 @@ from prometheus_client import start_http_server, Counter
 from flow.flow_pb2 import FlowMessage
 
 METRIC_PORT = 8000
+
+ADDRESS = ("127.0.0.1", 5170)
 
 CONF = {
     "bootstrap.servers": "127.0.0.1:9092",
@@ -33,9 +35,6 @@ logger.setLevel(logging.DEBUG)
 flows_logger = logging.getLogger("flows_logger")
 flows_logger.setLevel(logging.INFO)
 
-handler = graypy.GELFUDPHandler("127.0.0.1", 12201)
-flows_logger.addHandler(handler)
-
 
 def main():
     start_http_server(METRIC_PORT)
@@ -48,6 +47,8 @@ def main():
     pyt.insert(IPv4Network("10.0.0.0/8"), {"name": "internal"})
     pyt.insert(IPv4Network("20.0.0.0/8"), {"name": "external"})
     pyt.insert(IPv6Address("2001:db8::1"), {"name": "ipv6"})
+
+    udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     while True:
         msg = consumer.poll(timeout=1.0)
@@ -102,14 +103,14 @@ def main():
             "forwarding_status": flow_message.forwarding_status,
             "time_flow_start": str(time_flow_start),
             "time_flow_end": str(time_flow_end),
-            "time_received": str(time_received),
+            "time_received": int(time_received.timestamp()),
             "type": flow_message.type,
             "sampling_rate": flow_message.sampling_rate,
             "sampler_address": str(sampler_address),
             "dst_prefix": dst_prefix,
         }
 
-        flows_logger.info(json.dumps(log))
+        udp_socket.sendto(json.dumps(log).encode(), ADDRESS)
 
 
 if __name__ == "__main__":
