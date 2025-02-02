@@ -48,14 +48,14 @@ services:
       - ./loki/loki-config.yaml:/etc/loki/local-config.yaml
       - loki:/loki
 
-  alloy:
-    image: grafana/alloy:v1.6.1
-    ports:
-      - "12345:12345"
-      - "12201:12201/udp"
-    volumes:
-      - ./alloy/config.alloy:/etc/alloy/config.alloy
-    command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
+  # alloy:
+  #   image: grafana/alloy:v1.6.1
+  #   ports:
+  #     - "12345:12345"
+  #     - "12201:12201/udp"
+  #   volumes:
+  #     - ./alloy/config.alloy:/etc/alloy/config.alloy
+  #   command: run --server.http.listen-addr=0.0.0.0:12345 --storage.path=/var/lib/alloy/data /etc/alloy/config.alloy
 
   goflow2:
     image: netsampler/goflow2:latest
@@ -71,6 +71,14 @@ services:
       - -format=bin
     depends_on:
       - kafka
+
+  fluentbit:
+    image: fluent/fluent-bit:3.2
+    ports:
+      - "5170:5170/udp"
+    volumes:
+      - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
+      - ./fluent-bit/fluent-bit-parser.conf:/fluent-bit/etc/fluent-bit-parser.conf
 
   nflow-generator:
     image: networkstatic/nflow-generator
