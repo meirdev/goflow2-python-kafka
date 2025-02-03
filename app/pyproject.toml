@@ -9,6 +9,7 @@ dependencies = [
     "prometheus-client>=0.21.1",
     "protobuf>=5.29.3",
     "pytricia>=1.0.2",
+    "requests>=2.32.3",
 ]
 
 [tool.uv]

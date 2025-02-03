@@ -1,20 +1,18 @@
-import json
 import logging
-import socket
+import random
 from datetime import datetime, timezone
 from ipaddress import ip_address, IPv4Network, IPv6Address
 from io import BytesIO
 
 import pytricia
+import requests
 from confluent_kafka import Consumer
 from google.protobuf import proto
 from prometheus_client import start_http_server, Counter
 
 from flow.flow_pb2 import FlowMessage
 
-METRIC_PORT = 8000
-
-ADDRESS = ("127.0.0.1", 5170)
+METRIC_PORT = 8090
 
 CONF = {
     "bootstrap.servers": "127.0.0.1:9092",
@@ -32,9 +30,6 @@ inbound_packets_counter = Counter(
 logger = logging.getLogger("logger")
 logger.setLevel(logging.DEBUG)
 
-flows_logger = logging.getLogger("flows_logger")
-flows_logger.setLevel(logging.INFO)
-
 
 def main():
     start_http_server(METRIC_PORT)
@@ -48,7 +43,7 @@ def main():
     pyt.insert(IPv4Network("20.0.0.0/8"), {"name": "external"})
     pyt.insert(IPv6Address("2001:db8::1"), {"name": "ipv6"})
 
-    udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    logs = []
 
     while True:
         msg = consumer.poll(timeout=1.0)
@@ -91,9 +86,11 @@ def main():
             inbound_bytes_counter.labels(prefix=dst_prefix).inc(bytes)
             inbound_packets_counter.labels(prefix=dst_prefix).inc(packets)
 
+            print(f"Sent {bytes} bytes to {dst_prefix}")
+
         log = {
-            "src_addr": str(src_addr),
-            "dst_addr": str(dst_addr),
+            "src_addr": src_addr,
+            "dst_addr": dst_addr,
             "src_port": flow_message.src_port,
             "dst_port": flow_message.dst_port,
             "proto": flow_message.proto,
@@ -101,16 +98,20 @@ def main():
             "bytes": flow_message.bytes,
             "packets": flow_message.packets,
             "forwarding_status": flow_message.forwarding_status,
-            "time_flow_start": str(time_flow_start),
-            "time_flow_end": str(time_flow_end),
-            "time_received": int(time_received.timestamp()),
+            "time_flow_start": time_flow_start.isoformat(),
+            "time_flow_end": time_flow_end.isoformat(),
+            "time_received": time_received.isoformat(),
             "type": flow_message.type,
             "sampling_rate": flow_message.sampling_rate,
-            "sampler_address": str(sampler_address),
+            "sampler_address": sampler_address,
             "dst_prefix": dst_prefix,
         }
 
-        udp_socket.sendto(json.dumps(log).encode(), ADDRESS)
+        logs.append([str(flow_message.time_received_ns), f"flow: {random.random()}", {k: str(v) for k, v in log.items()}])
+
+        if len(logs) == 10:
+            requests.post("http://127.0.0.1:3100/loki/api/v1/push", json={"streams": [{"stream": {"job": "flow"}, "values": logs}]}, headers={"X-Scope-OrgID": "grafana"})
+            logs = []
 
 
 if __name__ == "__main__":
