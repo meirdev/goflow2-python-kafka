@@ -1,18 +1,15 @@
 import logging
 import random
+import sys
 from datetime import datetime, timezone
 from ipaddress import ip_address, IPv4Network, IPv6Address
 from io import BytesIO
 
-import pytricia
-import requests
 from confluent_kafka import Consumer
 from google.protobuf import proto
-from prometheus_client import start_http_server, Counter
+from pythonjsonlogger.json import JsonFormatter
 
 from flow.flow_pb2 import FlowMessage
-
-METRIC_PORT = 8090
 
 CONF = {
     "bootstrap.servers": "127.0.0.1:9092",
@@ -20,40 +17,28 @@ CONF = {
     "auto.offset.reset": "smallest",
 }
 
-inbound_bytes_counter = Counter(
-    "inbound_bytes", "Bytes sent to destination prefix", ["prefix"]
-)
-inbound_packets_counter = Counter(
-    "inbound_packets", "Packets sent to destination prefix", ["prefix"]
-)
+logger = logging.getLogger("flows")
+logger.setLevel(logging.INFO)
 
-logger = logging.getLogger("logger")
-logger.setLevel(logging.DEBUG)
+logger_handler = logging.StreamHandler()
+logger_handler.setFormatter(JsonFormatter())
+logger.addHandler(logger_handler)
 
 
 def main():
-    start_http_server(METRIC_PORT)
-
     consumer = Consumer(CONF)
 
     consumer.subscribe(["flows"])
-
-    pyt = pytricia.PyTricia(128)
-    pyt.insert(IPv4Network("10.0.0.0/8"), {"name": "internal"})
-    pyt.insert(IPv4Network("20.0.0.0/8"), {"name": "external"})
-    pyt.insert(IPv6Address("2001:db8::1"), {"name": "ipv6"})
-
-    logs = []
 
     while True:
         msg = consumer.poll(timeout=1.0)
 
         if msg is None:
-            logger.debug("No message")
+            logger.info("No message")
             continue
 
         if msg.error():
-            logger.debug(msg.error())
+            logger.info(msg.error())
             continue
 
         value = BytesIO(msg.value())
@@ -80,14 +65,6 @@ def main():
         bytes = flow_message.bytes * max(flow_message.sampling_rate, 1)
         packets = flow_message.packets * max(flow_message.sampling_rate, 1)
 
-        dst_prefix = pyt.get_key(dst_addr)
-
-        if dst_prefix:
-            inbound_bytes_counter.labels(prefix=dst_prefix).inc(bytes)
-            inbound_packets_counter.labels(prefix=dst_prefix).inc(packets)
-
-            print(f"Sent {bytes} bytes to {dst_prefix}")
-
         log = {
             "src_addr": src_addr,
             "dst_addr": dst_addr,
@@ -104,14 +81,12 @@ def main():
             "type": flow_message.type,
             "sampling_rate": flow_message.sampling_rate,
             "sampler_address": sampler_address,
-            "dst_prefix": dst_prefix,
         }
 
-        logs.append([str(flow_message.time_received_ns), f"flow: {random.random()}", {k: str(v) for k, v in log.items()}])
-
-        if len(logs) == 10:
-            requests.post("http://127.0.0.1:3100/loki/api/v1/push", json={"streams": [{"stream": {"job": "flow"}, "values": logs}]}, headers={"X-Scope-OrgID": "grafana"})
-            logs = []
+        logger.info(
+            f"{time_received.isoformat()} {src_addr}:{flow_message.src_port} > {dst_addr}:{flow_message.dst_port} protocol: {flow_message.proto} flags: {flow_message.tcp_flags} packets: {flow_message.packets} size: {flow_message.bytes} bytes sample ratio: {flow_message.sampling_rate} agent: {sampler_address}",
+            extra=log,
+        )
 
 
 if __name__ == "__main__":
