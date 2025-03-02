@@ -19,35 +19,6 @@ services:
       - KAFKA_CFG_ADVERTISED_LISTENERS=HOST://127.0.0.1:9092,INTERNAL://kafka:9093
       - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@localhost:9091
 
-  grafana:
-    image: grafana/grafana:11.5.0
-    ports:
-      - "3000:3000"
-    restart: always
-    volumes:
-      - ./grafana/provisioning/datasources/default.yaml:/etc/grafana/provisioning/datasources/default.yaml
-      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
-      - ./grafana/dashboards:/var/lib/grafana/dashboards
-      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
-      - grafana:/var/lib/grafana
-
-  prometheus:
-    image: prom/prometheus:v3.1.0
-    ports:
-      - "9090:9090"
-    restart: always
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus:/prometheus
-
-  loki:
-    image: grafana/loki:3.3.2
-    ports:
-      - "3100:3100"
-    volumes:
-      - ./loki/loki-config.yaml:/etc/loki/local-config.yaml
-      - loki:/loki
-
   goflow2:
     image: netsampler/goflow2:latest
     ports:
@@ -67,8 +38,3 @@ services:
     image: networkstatic/nflow-generator
     restart: always
     command: -p 2055 -t goflow2
-
-volumes:
-  loki:
-  prometheus:
-  grafana:
