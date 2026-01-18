@@ -1,8 +1,6 @@
 import logging
-import random
-import sys
 from datetime import datetime, timezone
-from ipaddress import ip_address, IPv4Network, IPv6Address
+from ipaddress import ip_address
 from io import BytesIO
 
 from confluent_kafka import Consumer
@@ -61,9 +59,6 @@ def main():
         time_received = datetime.fromtimestamp(
             flow_message.time_received_ns / 1e9, timezone.utc
         )
-
-        bytes = flow_message.bytes * max(flow_message.sampling_rate, 1)
-        packets = flow_message.packets * max(flow_message.sampling_rate, 1)
 
         log = {
             "src_addr": src_addr,
